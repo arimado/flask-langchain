@@ -3,3 +3,4 @@ Procfile
 AWS*
 __pycache__/
 *.docx
+venv/

@@ -1,5 +1,10 @@
 from flask import Flask, render_template, jsonify, request
 from urllib.parse import unquote
+from langchain.llms import OpenAI
+from langchain.prompts import PromptTemplate
+from langchain.chains import LLMChain, SequentialChain
+from langchain.memory import ConversationBufferMemory
+from langchain.utilities import WikipediaAPIWrapper
 
 from decouple import config
 
@@ -12,7 +17,17 @@ import nltk
 nltk.data.path.append('nltk_data')
 
 os.environ["OPENAI_API_KEY"] = config('OPENAI_API_KEY')
-app = Flask(__name__)
+app = Flask(__name__) 
+llm = OpenAI(temperature=0.9)
+
+title_template = PromptTemplate(
+    input_variables = ['topic'],
+    template = "The synopsis for a book about {topic}.",
+)
+
+title_memory = ConversationBufferMemory(input_key='topic', memory_key='chat_history')
+
+title_chain = LLMChain(llm=llm, prompt=title_template, verbose=True, output_key='title', memory=title_memory)
 
 @app.route('/')
 def home():
@@ -39,6 +54,8 @@ def get_data():
         print ("DEBUG decoded_text",decoded_text)
 
         summary = summarize_webpage(decoded_text)
+
+        print ("body", request.json)
 
         response = {
             'submitted_url': encode_url,
